@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Login</h1>
+
+    <form id="loginForm">
+      <label for="usuario">Usuário:</label>
+      <input type="text" id="usuario" required>
+
+      <label for="senha">Senha:</label>
+      <input type="password" id="senha" required>
+
+      <button type="submit">Entrar</button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { login } from './js/session.js';
+
+    document.getElementById("loginForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const usuario = document.getElementById("usuario").value.trim();
+      const senha = document.getElementById("senha").value.trim();
+
+      try {
+        login(usuario, senha);
+        window.location.href = "dashboard.html";
+      } catch (erro) {
+        alert(erro.message);
+      }
+    });
+  </script>
+</body>
+</html>

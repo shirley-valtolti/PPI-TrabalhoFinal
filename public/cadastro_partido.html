@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro de Partidos</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Cadastro de Partidos</h1>
+
+    <form id="formPartido">
+      <label for="codigo">Código:</label>
+      <input type="text" id="codigo" required>
+
+      <label for="nome">Nome do Partido:</label>
+      <input type="text" id="nome" required>
+
+      <label for="sigla">Sigla:</label>
+      <input type="text" id="sigla" required>
+
+      <button type="submit">Salvar</button>
+      <button type="button" id="limpar">Limpar</button>
+    </form>
+
+    <h2>Partidos Cadastrados</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nome</th>
+          <th>Sigla</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaPartidos"></tbody>
+    </table>
+
+    <button onclick="window.location.href='dashboard.html'">Voltar</button>
+  </div>
+
+  <script type="module">
+    import { Partido, cadastrarPartido, listarPartidos, excluirPartido, editarPartido } from './js/partido.js';
+    import { validarCamposObrigatorios } from './js/validador.js';
+    import { preencherTabela, criarCelula, criarBotao, limparFormulario, preencherFormulario } from './js/interface.js';
+    import { isAutenticado } from './js/session.js';
+
+    if (!isAutenticado()) {
+      alert("Sessão expirada. Faça login novamente.");
+      window.location.href = "index.html";
+    }
+
+    let editandoCodigo = null;
+
+    function atualizarTabela() {
+      const dados = listarPartidos();
+      preencherTabela("tabelaPartidos", dados, (partido) => {
+        const tr = document.createElement("tr");
+        tr.appendChild(criarCelula(partido.codigo));
+        tr.appendChild(criarCelula(partido.nome));
+        tr.appendChild(criarCelula(partido.sigla));
+
+        const tdAcoes = document.createElement("td");
+        tdAcoes.appendChild(criarBotao("Editar", () => {
+          preencherFormulario(partido);
+          editandoCodigo = partido.codigo;
+        }, 'btn-editar'));
+
+        tdAcoes.appendChild(criarBotao("Excluir", () => {
+          if (confirm("Deseja excluir esse partido?")) {
+            excluirPartido(partido.codigo);
+            atualizarTabela();
+          }
+        }, 'btn-excluir'));
+
+        tr.appendChild(tdAcoes);
+        return tr;
+      });
+    }
+
+    document.getElementById("formPartido").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const codigo = document.getElementById("codigo").value.trim();
+      const nome = document.getElementById("nome").value.trim();
+      const sigla = document.getElementById("sigla").value.trim();
+
+      try {
+        validarCamposObrigatorios({ codigo, nome, sigla });
+
+        const novoPartido = new Partido(codigo, nome, sigla);
+
+        if (editandoCodigo && editandoCodigo !== codigo) {
+          excluirPartido(editandoCodigo);
+        }
+
+        if (editandoCodigo) {
+          editarPartido(editandoCodigo, novoPartido);
+          editandoCodigo = null;
+        } else {
+          cadastrarPartido(novoPartido);
+        }
+
+        limparFormulario("formPartido");
+        atualizarTabela();
+
+      } catch (erro) {
+        alert(erro.message);
+      }
+    });
+
+    document.getElementById("limpar").addEventListener("click", () => {
+      limparFormulario("formPartido");
+      editandoCodigo = null;
+    });
+
+    atualizarTabela();
+  </script>
+</body>
+</html>

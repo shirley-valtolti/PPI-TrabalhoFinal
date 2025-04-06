@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro de Candidatos</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Cadastro de Candidatos</h1>
+
+    <form id="formCandidato">
+      <label for="cpf">CPF:</label>
+      <input type="text" id="cpf" required>
+
+      <label for="titulo">Título de Eleitor:</label>
+      <input type="text" id="titulo" required>
+
+      <label for="nome">Nome:</label>
+      <input type="text" id="nome" required>
+
+      <label for="endereco">Endereço:</label>
+      <input type="text" id="endereco" required>
+
+      <label for="numero">Número:</label>
+      <input type="text" id="numero" required>
+
+      <label for="bairro">Bairro:</label>
+      <input type="text" id="bairro" required>
+
+      <label for="cidade">Cidade:</label>
+      <input type="text" id="cidade" required>
+
+      <label for="uf">UF:</label>
+      <input type="text" id="uf" maxlength="2" required>
+
+      <label for="cep">CEP:</label>
+      <input type="text" id="cep" required>
+
+      <label for="renda">Renda Mensal:</label>
+      <input type="text" id="renda" required>
+
+      <button type="submit">Salvar</button>
+      <button type="button" id="limpar">Limpar</button>
+    </form>
+
+    <h2>Candidatos Cadastrados</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>CPF</th>
+          <th>Nome</th>
+          <th>Cidade</th>
+          <th>UF</th>
+          <th>Renda</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaCandidatos"></tbody>
+    </table>
+
+    <button onclick="window.location.href='dashboard.html'">Voltar</button>
+  </div>
+
+  <script type="module">
+    import { Candidato, cadastrarCandidato, listarCandidatos, excluirCandidato, editarCandidato } from './js/candidato.js';
+    import { validarCamposObrigatorios, validarCPF, validarTituloEleitor, validarCEP, validarRenda } from './js/validador.js';
+    import { preencherTabela, criarCelula, criarBotao, limparFormulario, preencherFormulario } from './js/interface.js';
+    import { isAutenticado } from './js/session.js';
+
+    if (!isAutenticado()) {
+      alert("Sessão expirada. Faça login novamente.");
+      window.location.href = "index.html";
+    }
+
+    let editandoCpf = null;
+
+    function atualizarTabela() {
+      const dados = listarCandidatos();
+      preencherTabela("tabelaCandidatos", dados, (candidato) => {
+        const tr = document.createElement("tr");
+        tr.appendChild(criarCelula(candidato.cpf));
+        tr.appendChild(criarCelula(candidato.nome));
+        tr.appendChild(criarCelula(candidato.cidade));
+        tr.appendChild(criarCelula(candidato.uf));
+        tr.appendChild(criarCelula(candidato.renda));
+
+        const tdAcoes = document.createElement("td");
+        tdAcoes.appendChild(criarBotao("Editar", () => {
+          preencherFormulario(candidato);
+          editandoCpf = candidato.cpf;
+        }, 'btn-editar'));
+
+        tdAcoes.appendChild(criarBotao("Excluir", () => {
+          if (confirm("Deseja excluir esse candidato?")) {
+            excluirCandidato(candidato.cpf);
+            atualizarTabela();
+          }
+        }, 'btn-excluir'));
+
+        tr.appendChild(tdAcoes);
+        return tr;
+      });
+    }
+
+    document.getElementById("formCandidato").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const campos = {
+        cpf: document.getElementById("cpf").value.trim(),
+        titulo: document.getElementById("titulo").value.trim(),
+        nome: document.getElementById("nome").value.trim(),
+        endereco: document.getElementById("endereco").value.trim(),
+        numero: document.getElementById("numero").value.trim(),
+        bairro: document.getElementById("bairro").value.trim(),
+        cidade: document.getElementById("cidade").value.trim(),
+        uf: document.getElementById("uf").value.trim(),
+        cep: document.getElementById("cep").value.trim(),
+        renda: document.getElementById("renda").value.trim(),
+      };
+
+      try {
+        validarCamposObrigatorios(campos);
+        validarCPF(campos.cpf);
+        validarTituloEleitor(campos.titulo);
+        validarCEP(campos.cep);
+        validarRenda(campos.renda);
+
+        const novo = new Candidato(
+          campos.cpf, campos.titulo, campos.nome, campos.endereco, campos.numero,
+          campos.bairro, campos.cidade, campos.uf, campos.cep, campos.renda
+        );
+
+        if (editandoCpf && editandoCpf !== campos.cpf) {
+          excluirCandidato(editandoCpf);
+        }
+
+        if (editandoCpf) {
+          editarCandidato(editandoCpf, novo);
+          editandoCpf = null;
+        } else {
+          cadastrarCandidato(novo);
+        }
+
+        limparFormulario("formCandidato");
+        atualizarTabela();
+
+      } catch (erro) {
+        alert(erro.message);
+      }
+    });
+
+    document.getElementById("limpar").addEventListener("click", () => {
+      limparFormulario("formCandidato");
+      editandoCpf = null;
+    });
+
+    atualizarTabela();
+  </script>
+</body>
+</html>
